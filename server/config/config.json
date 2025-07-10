@@ -8,14 +8,14 @@
   },
   "test": {
     "username": "root",
-    "password": "123456",
+    "password": "",
     "database": "social_media",
     "host": "127.0.0.1",
     "dialect": "mysql"
   },
   "production": {
     "username": "root",
-    "password": "123456",
+    "password": "",
     "database": "social_media",
     "host": "127.0.0.1",
     "dialect": "mysql"

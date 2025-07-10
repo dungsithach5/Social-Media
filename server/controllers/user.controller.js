@@ -2,6 +2,36 @@ const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
+exports.resetPassword = async (req, res) => {
+  const { email, password, confirmPassword } = req.body;
+
+  if (!email || !password || !confirmPassword) {
+    return res.status(400).json({ message: "Thiếu thông tin" });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({ message: "Mật khẩu không khớp" });
+  }
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    const hashed = await bcrypt.hash(password, 10);
+    user.password = hashed;
+    await user.save();
+
+    return res.json({ message: "Đặt lại mật khẩu thành công" });
+  } catch (err) {
+    console.error("Lỗi đặt lại mật khẩu:", err);
+    return res.status(500).json({ message: "Lỗi server" });
+  }
+};
+
+
 // Validation helper functions
 const validatePassword = (password) => {
   const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;

@@ -4,6 +4,12 @@ const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authMiddleware = require('../middleware/auth');
+const express = require("express");
+const userController = require("../controllers/user.controller");
+
+
+
+
 
 const {
     getAllUsers,
@@ -13,6 +19,11 @@ const {
     updateUser,
     deleteUser,
 } = require('../controllers/user.controller');
+
+router.post('/api/users/reset-password', userController.resetPassword);
+
+
+
 
 router.post('/register', register);
 router.post('/login', login);
