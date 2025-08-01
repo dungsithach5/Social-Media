@@ -16,6 +16,7 @@ import DropdownMenuEllipsis from "../dropdown-ellipsis"
 import HoverCardUser from "../hover-card-user"
 import LikeButton from "./like-button"
 import BookmarkButton from "./bookmark-button"
+import { savePost } from "../../../services/Api/saved-post"
 import ColorPalette from "./color-palette"
 import EmojiPickerPopover from "./emoji-picker-popover"
 import RelatedPosts from "./related-post"
@@ -49,7 +50,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.likeCount || 0)
   const [bookmarked, setBookmarked] = useState(false)
-  const { session } = useAuth(true)
+  const { session, user } = useAuth(true)
 
   const googleUser = session?.user
   const userName = googleUser?.name || 'Unknown User'
@@ -114,6 +115,21 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
     }, 1000)
   }
 
+  const handleBookmarkToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!session?.user?.id) return;
+
+    const postId = currentPost.id;
+    const userId = user.id;
+
+    try {
+      await savePost(postId, userId);
+      setBookmarked((prev) => !prev);
+    } catch (err) {
+      console.error("Error saving post:", err);
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -163,7 +179,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
                     <BookmarkButton
                       bookmarked={bookmarked}
-                      onToggle={() => setBookmarked(!bookmarked)}
+                      onToggle={handleBookmarkToggle}
                     />
                   </div>
                 </div>
@@ -241,7 +257,7 @@ export function ComposerComment({ post, currentUserId, onDelete, relatedPosts = 
 
                   <BookmarkButton
                     bookmarked={bookmarked}
-                    onToggle={() => setBookmarked(!bookmarked)}
+                    onToggle={handleBookmarkToggle}
                   />
                 </div>
               </div>

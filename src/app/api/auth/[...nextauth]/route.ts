@@ -33,7 +33,7 @@ const handler = NextAuth({
         });
 
         // Gọi API backend để tạo/cập nhật user
-        const response = await fetch('http://localhost:5001/api/users/auth/google', {
+        const response = await fetch('http://localhost:5000/api/users/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

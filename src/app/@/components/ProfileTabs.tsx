@@ -58,7 +58,7 @@ export default function ProfileTabs() {
 
   const handleDeletePost = async (postId: number) => {
     try {
-              await axios.delete(`http://localhost:5001/api/posts/${postId}`);
+      await axios.delete(`http://localhost:5000/api/posts/${postId}`);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     } catch (err) {
       console.error("Error deleting post", err);
@@ -69,7 +69,7 @@ export default function ProfileTabs() {
     <Tabs defaultValue="post" className="mt-6 px-6">
       <TabsList className="mx-auto space-x-80 border-b border-white/10 bg-transparent">
         <TabsTrigger value="post">Post</TabsTrigger>
-        <TabsTrigger value="following">Following</TabsTrigger>
+        <TabsTrigger value="saved">Saved</TabsTrigger>
         <TabsTrigger value="followers">Followers</TabsTrigger>
       </TabsList>
 
@@ -106,22 +106,7 @@ export default function ProfileTabs() {
 
       {/* Following */}
       <TabsContent value="following" className="mt-6 mx-auto">
-        <div className="flex items-center space-x-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img
-              src="https://ui.shadcn.com/avatars/01.png"
-              alt="Avatar"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col">
-            <span className="font-medium text-sm">Sofia Davis</span>
-            <span className="text-gray-500 text-sm">m@example.com</span>
-          </div>
-          <button className="ml-auto flex items-center border border-gray-300 rounded-md px-3 py-1 text-sm font-medium hover:bg-gray-100 transition cursor-pointer">
-            Follow
-          </button>
-        </div>
+        {/* save ở đây */}
       </TabsContent>
 
       {/* Followers */}
