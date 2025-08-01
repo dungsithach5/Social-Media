@@ -7,6 +7,7 @@ const {
     createPost,
     updatePost,
     deletePost,
+    savePost,
 } = require('../controllers/post.controller');
 
 router
@@ -19,5 +20,9 @@ router
     .get(getPostById)
     .put(updatePost)
     .delete(deletePost);
+
+router
+    .route('/:id/save')
+    .post(savePost);
 
 module.exports = router;

@@ -175,3 +175,26 @@ exports.deletePost = async (req, res) => {
     res.status(500).json({ message: 'Error deleting post', error });
   }
 };
+
+exports.savePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Missing userId" });
+    }
+
+    await prisma.saved_posts.create({
+      data: {
+        user_id: userId,
+        post_id: Number(postId),
+      },
+    });
+
+    return res.status(200).json({ message: "Post saved successfully" });
+  } catch (error) {
+    console.error("Error saving post", error);
+    return res.status(500).json({ message: "Failed to save post" });
+  }
+};

@@ -9,7 +9,7 @@ datasource db {
 
 model comments {
   id        Int      @id @default(autoincrement())
-  user_id   Int
+  user_id   BigInt
   post_id   Int
   content   String   @db.Text
   createdAt DateTime @default(now()) @db.DateTime(0)
@@ -29,8 +29,8 @@ model comments {
 
 model follows {
   id                                Int      @id @default(autoincrement())
-  follower_id                       Int
-  following_id                      Int
+  follower_id                       BigInt
+  following_id                      BigInt
   createdAt                         DateTime @db.DateTime(0)
   updatedAt                         DateTime @db.DateTime(0)
   users_follows_follower_idTousers  users    @relation("follows_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, map: "follows_ibfk_1")
@@ -42,7 +42,7 @@ model follows {
 
 model likes {
   id        Int      @id @default(autoincrement())
-  user_id   Int
+  user_id   BigInt
   post_id   Int
   createdAt DateTime @db.DateTime(0)
   updatedAt DateTime @db.DateTime(0)
@@ -55,8 +55,8 @@ model likes {
 
 model messages {
   id                                Int      @id @default(autoincrement())
-  sender_id                         Int?
-  receiver_id                       Int?
+  sender_id                         BigInt?
+  receiver_id                       BigInt?
   content                           String?  @db.Text
   is_read                           Boolean? @default(false)
   createdAt                         DateTime @db.DateTime(0)
@@ -70,7 +70,7 @@ model messages {
 
 model notifications {
   id        Int      @id @default(autoincrement())
-  user_id   Int
+  user_id   BigInt
   type      String   @db.VarChar(50)
   content   String   @db.Text
   is_read   Boolean  @default(false)
@@ -94,6 +94,7 @@ model posts {
   relatedPosts   related_posts[] @relation("PostToRelated")
   relatedToPosts related_posts[] @relation("RelatedToPost")
   postTags       post_tags[]
+  savedByUsers   saved_posts[]  @relation("PostToSavedPosts")
 }
 
 model related_posts {
@@ -107,6 +108,19 @@ model related_posts {
   @@unique([post_id, related_id])
   @@index([post_id])
   @@index([related_id])
+}
+
+model saved_posts {
+  user_id   BigInt
+  post_id   Int
+  createdAt DateTime @default(now()) @db.DateTime(0)
+
+  user users @relation("UserSavedPosts", fields: [user_id], references: [id], onDelete: Cascade)
+  post posts @relation("PostToSavedPosts", fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, post_id])
+  @@index([user_id])
+  @@index([post_id])
 }
 
 model tags {
@@ -135,7 +149,7 @@ model sequelizemeta {
 }
 
 model users {
-  id                                   Int             @id @default(autoincrement())
+  id                                   BigInt          @id @default(autoincrement())
   username                             String?         @unique(map: "username") @db.VarChar(50)
   email                                String          @unique(map: "email") @db.VarChar(100)
   password                             String?         @db.VarChar(255)
@@ -157,11 +171,12 @@ model users {
   messages_messages_sender_idTousers   messages[]      @relation("messages_sender_idTousers")
   messages_messages_receiver_idTousers messages[]      @relation("messages_receiver_idTousers")
   notifications                        notifications[]
+  savedPosts                           saved_posts[]   @relation("UserSavedPosts")
 }
 
 model Account {
   id                String  @id
-  userId            Int
+  userId            BigInt
   type              String
   provider          String
   providerAccountId String
@@ -181,7 +196,7 @@ model Account {
 model Session {
   id           String   @id
   sessionToken String   @unique
-  userId       Int
+  userId       BigInt
   expires      DateTime
   users        users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
