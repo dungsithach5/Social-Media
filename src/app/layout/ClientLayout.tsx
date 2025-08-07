@@ -8,7 +8,7 @@ import OnboardingModal from '../@/components/OnboardingModal';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/auth';
-  const isAdminPage = pathname.startsWith('/admin'); // sử dụng startsWith để bao phủ tất cả các route như /admin/dashboard, /admin/posts, v.v.
+  const isAdminPage = pathname.startsWith('/admin');
 
   const shouldHideBars = isAuthPage || isAdminPage;
 
@@ -17,7 +17,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!shouldHideBars && <NavBar />}
       <main className="flex-1">{children}</main>
       {!shouldHideBars && <BottomBar />}
-      <OnboardingModal />
+      {/* <OnboardingModal /> */}
     </>
   );
 }

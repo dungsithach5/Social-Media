@@ -10,4 +10,5 @@ module.exports = (app) => {
     app.use('/api/upload', require('./upload.js'));
     app.use('/api/banned_keywords', require('./bannedKeywords.route'));
     app.use('/api/reports', require('./report.route'));
+    app.use('/api/interests', require('./interest.route'))
 }

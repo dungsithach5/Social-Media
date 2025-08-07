@@ -1,112 +1,45 @@
 'use client';
 
+import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useSelector } from 'react-redux';
 import { submitOnboarding } from '../../services/Api/onboarding';
 
-// Loading skeleton component with improved design
-const TopicSkeleton = () => (
-  <div className="relative p-4 rounded-2xl border-2 border-gray-200 overflow-hidden h-32">
-    <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 animate-pulse"></div>
-    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-    <div className="relative z-10 text-center h-full flex flex-col items-center justify-center">
-      <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full mb-3 animate-pulse"></div>
-      <div className="w-20 h-3 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full animate-pulse"></div>
-      <div className="w-16 h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full mt-2 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-    </div>
-  </div>
-);
-
-
-// Sound effects utility
-const playSound = (type: 'click' | 'select' | 'success' | 'error') => {
-  try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    const frequencies = {
-      click: 800,
-      select: 1000,
-      success: 1200,
-      error: 400
-    };
-    
-    const durations = {
-      click: 0.1,
-      select: 0.15,
-      success: 0.3,
-      error: 0.2
-    };
-    
-    oscillator.frequency.setValueAtTime(frequencies[type], audioContext.currentTime);
-    oscillator.type = 'sine';
-    
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + durations[type]);
-    
-    oscillator.start(audioContext.currentTime);
-    oscillator.stop(audioContext.currentTime + durations[type]);
-  } catch (error) {
-    // Fallback for browsers that don't support Web Audio API
-    console.log('Sound effect:', type);
-  }
-};
-
-const topics = [
-  { 
-    id: 'music', 
-    name: 'Music', 
-    icon: '🎵', 
-    image: 'https://cdn.pixabay.com/photo/2023/12/22/16/29/sheet-music-8463988_1280.jpg'
-  },
-  { 
-    id: 'sports', 
-    name: 'Sports', 
-    icon: '⚽', 
-    image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5t7DgML9dvoEAt09fUpLCzCUnMTpu8qEPug&s'
-  },
-  { 
-    id: 'travel', 
-    name: 'Travel', 
-    icon: '✈️', 
-    image: 'https://igotravel.vn/wwwroot/resources/upload/tong-hop-cac-hinh-thuc-du-lich-pho-bien-nhat-tai-viet-nam.png'
-  },
-      { 
-      id: 'technology', 
-      name: 'Technology', 
-      icon: '💻', 
-      image: 'https://hoanghamobile.com/tin-tuc/wp-content/uploads/2024/08/background-cong-nghe-25-1.jpg'
-    },
-    { 
-      id: 'food', 
-      name: 'Food', 
-      icon: '🍕', 
-      image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSnRaeSrU8T7sv9_m4m0fgqfG3bHAHBvnS2UA&s'
-    },
-      { 
-      id: 'fashion', 
-      name: 'Fashion', 
-      icon: '👗', 
-      image: 'https://m.media-amazon.com/images/I/61NduGwyh5L._UF1000,1000_QL80_.jpg'
-    },
-];
+interface Interest {
+  id: string;
+  name: string;
+  image: string;
+}
 
 export default function OnboardingModal() {
   const { data: session, status, update } = useSession();
   const reduxUser = useSelector((state: any) => state.user.user);
   const [gender, setGender] = useState('');
-  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [imageLoadStates, setImageLoadStates] = useState<Record<string, boolean>>({});
   const [showSuccess, setShowSuccess] = useState(false);
-  const [confetti, setConfetti] = useState<Array<{id: number, x: number, y: number, color: string, delay: number}>>([]);
+
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [interests, setInterests] = useState<Interest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInterests = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/api/interests");
+        setInterests(res.data);
+      } catch (err) {
+        console.error("Failed to fetch interests", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInterests();
+  }, []);
+
 
   useEffect(() => {
     console.log('=== ONBOARDING MODAL DEBUG ===');
@@ -179,21 +112,18 @@ export default function OnboardingModal() {
     }
   }, [session?.user?.onboarded, session?.user?.email, status, reduxUser?.onboarded, reduxUser?.email]);
 
-  const handleTopicToggle = (topicId: string) => {
-    const isSelected = selectedTopics.includes(topicId);
+  const handleInterestToggle = (topicId: string) => {
+    const isSelected = selectedInterests.includes(topicId);
     
     if (isSelected) {
       // Nếu đã chọn thì bỏ chọn
-      setSelectedTopics(prev => prev.filter(id => id !== topicId));
-      playSound('click');
+      setSelectedInterests(prev => prev.filter(id => id !== topicId));
     } else {
       // Nếu chưa chọn và chưa đạt giới hạn 3 topics
-      if (selectedTopics.length < 3) {
-        setSelectedTopics(prev => [...prev, topicId]);
-        playSound('select');
+      if (setSelectedInterests.length < 3) {
+        setSelectedInterests(prev => [...prev, topicId]);
       } else {
         // Đã đạt giới hạn 3 topics
-        playSound('error');
         alert('Bạn chỉ có thể chọn tối đa 3 topics!');
       }
     }
@@ -201,14 +131,12 @@ export default function OnboardingModal() {
 
   const handleNext = () => {
     if (currentStep === 1 && gender) {
-      playSound('select');
       setCurrentStep(2);
     }
   };
 
   const handleBack = () => {
     if (currentStep === 2) {
-      playSound('click');
       setCurrentStep(1);
     }
   };
@@ -217,44 +145,18 @@ export default function OnboardingModal() {
     setImageLoadStates(prev => ({ ...prev, [topicId]: true }));
   };
 
-  // Preload images when component mounts
-  useEffect(() => {
-    topics.forEach(topic => {
-      const img = new Image();
-      img.onload = () => handleImageLoad(topic.id);
-      img.onerror = () => handleImageLoad(topic.id); // Fallback nếu ảnh lỗi
-      img.src = topic.image;
-    });
-  }, []);
-
-  // Generate confetti effect
-  const generateConfetti = () => {
-    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F'];
-    const newConfetti = Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: -10,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      delay: Math.random() * 1000
-    }));
-    setConfetti(newConfetti);
-  };
-
   const handleSubmit = async () => {
     if (!gender.trim()) {
-      playSound('error');
       alert('Please select your gender!');
       return;
     }
     
-    if (selectedTopics.length === 0) {
-      playSound('error');
+    if (setSelectedInterests.length === 0) {
       alert('Please select at least 1 topic!');
       return;
     }
     
-    if (selectedTopics.length > 3) {
-      playSound('error');
+    if (setSelectedInterests.length > 3) {
       alert('You can only select up to 3 topics!');
       return;
     }
@@ -265,7 +167,7 @@ export default function OnboardingModal() {
       const requestData = {
         email: session?.user?.email || reduxUser?.email,
         gender: gender.trim(),
-        topics: selectedTopics.join(','),
+        topics: selectedInterests.join(','),
       };
       console.log('Onboarding request data:', requestData);
       
@@ -280,17 +182,14 @@ export default function OnboardingModal() {
           ...user,
           onboarded: true,
           gender: gender.trim(),
-          topics: selectedTopics.join(',')
+          topics: selectedInterests.join(',')
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         console.log('Updated localStorage user:', updatedUser);
       }
       
-      playSound('success');
-      
       // Show success animation
       setShowSuccess(true);
-      generateConfetti();
       
       // Wait for animation to complete then close modal
       setTimeout(async () => {
@@ -302,7 +201,6 @@ export default function OnboardingModal() {
             console.log('No email found, closing modal');
             setShowModal(false);
             setShowSuccess(false);
-            setConfetti([]);
             return;
           }
           
@@ -323,11 +221,9 @@ export default function OnboardingModal() {
               await update();
               setShowModal(false);
               setShowSuccess(false);
-              setConfetti([]);
             } else {
               console.log('User still not onboarded, keeping modal open');
               setShowSuccess(false);
-              setConfetti([]);
             }
           } else {
             const errorData = await refreshResponse.json().catch(() => ({}));
@@ -335,20 +231,17 @@ export default function OnboardingModal() {
             // Vẫn đóng modal vì onboarding đã thành công
             setShowModal(false);
             setShowSuccess(false);
-            setConfetti([]);
           }
         } catch (error) {
           console.error('Error updating session:', error);
           // Vẫn đóng modal vì onboarding đã thành công
           setShowModal(false);
           setShowSuccess(false);
-          setConfetti([]);
         }
       }, 3000);
       
     } catch (err: any) {
       console.error('Onboarding failed:', err);
-      playSound('error');
       
       // Show more specific error messages
       let errorMessage = 'An error occurred, please try again!';
@@ -364,25 +257,10 @@ export default function OnboardingModal() {
     }
   };
 
-  if (!showModal) return null;
+  // if (!showModal) return null;
 
   return (
     <div className="fixed inset-0 bg-white flex justify-center items-center z-50 p-4">
-      {/* Confetti Effect */}
-      {showSuccess && confetti.map((piece) => (
-        <div
-          key={piece.id}
-          className="fixed w-2 h-2 rounded-full pointer-events-none animate-confetti-fall"
-          style={{
-            left: `${piece.x}%`,
-            top: `${piece.y}%`,
-            backgroundColor: piece.color,
-            animationDelay: `${piece.delay}ms`,
-            zIndex: 60
-          }}
-        />
-      ))}
-      
       {/* Success Overlay */}
       {showSuccess && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex justify-center items-center z-55">
@@ -463,7 +341,6 @@ export default function OnboardingModal() {
                 <button
                   onClick={() => {
                     setGender('male');
-                    playSound('select');
                   }}
                   className={`p-6 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 active:scale-95 ${
                     gender === 'male'
@@ -477,7 +354,6 @@ export default function OnboardingModal() {
                 <button
                   onClick={() => {
                     setGender('female');
-                    playSound('select');
                   }}
                   className={`p-6 rounded-2xl border-2 transition-all duration-300 transform hover:scale-105 active:scale-95 ${
                     gender === 'female'
@@ -509,77 +385,61 @@ export default function OnboardingModal() {
             <div className="space-y-6 animate-scale-in">
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">Your Interests</h3>
-                <p className="text-gray-600">Select topics youre interested in (choose up to 3)</p>
+                <p className="text-gray-600">Select interests you're interested in (choose up to 3)</p>
                 <div className="mt-2 text-sm text-gray-500">
-                  <span className={`font-medium ${selectedTopics.length >= 3 ? 'text-red-500' : 'text-blue-600'}`}>
-                    {selectedTopics.length}/3 topics selected
+                  <span className={`font-medium ${selectedInterests.length >= 3 ? 'text-red-500' : 'text-blue-600'}`}>
+                    {selectedInterests.length}/3 interests selected
                   </span>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {topics.map((topic, index) => (
+                {interests.map((interest, index) => (
                   <button
-                    key={topic.id}
-                    onClick={() => handleTopicToggle(topic.id)}
-                    disabled={!selectedTopics.includes(topic.id) && selectedTopics.length >= 3}
+                    key={interest.id}
+                    onClick={() => handleInterestToggle(interest.id)}
+                    disabled={!selectedInterests.includes(interest.id) && selectedInterests.length >= 3}
                     className={`relative p-4 rounded-2xl border-2 transition-all duration-300 overflow-hidden group h-32 transform hover:scale-105 ${
-                      selectedTopics.includes(topic.id)
+                      selectedInterests.includes(interest.id)
                         ? 'border-gray-800 ring-2 ring-gray-200 shadow-lg'
-                        : !selectedTopics.includes(topic.id) && selectedTopics.length >= 3
+                        : !selectedInterests.includes(interest.id) && selectedInterests.length >= 3
                         ? 'border-gray-200 opacity-50 cursor-not-allowed'
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
                     }`}>
-                    {/* Loading Skeleton */}
-                    {!imageLoadStates[topic.id] && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100">
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-                        <div className="h-full flex flex-col items-center justify-center relative z-10">
-                          <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full mb-3 animate-pulse"></div>
-                          <div className="w-20 h-3 bg-gradient-to-r from-gray-300 to-gray-400 rounded-full animate-pulse"></div>
-                          <div className="w-16 h-2 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full mt-2 animate-pulse"></div>
-                        </div>
-                      </div>
-                    )}
                     
                     {/* Fallback Background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300"></div>
                     
                     {/* Background Image */}
                     <img
-                      src={topic.image}
-                      alt={topic.name}
+                      src={interest.image}
+                      alt={interest.name}
                       className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
-                        imageLoadStates[topic.id] ? 'opacity-100' : 'opacity-0'
+                        imageLoadStates[interest.id] ? 'opacity-100' : 'opacity-0'
                       } group-hover:scale-110`}
-                      onLoad={() => handleImageLoad(topic.id)}
+                      onLoad={() => handleImageLoad(interest.id)}
                       onError={() => {
-                        console.log(`Failed to load image for ${topic.name}`);
-                        handleImageLoad(topic.id); // Vẫn set loaded để ẩn skeleton
+                        console.log(`Failed to load image for ${interest.name}`);
+                        handleImageLoad(interest.id);
                       }}
                       crossOrigin="anonymous"
                     />
                     
                     {/* Overlay */}
                     <div className={`absolute inset-0 transition-all duration-300 ${
-                      imageLoadStates[topic.id] ? 'bg-black/30' : 'bg-transparent'
+                      imageLoadStates[interest.id] ? 'bg-black/30' : 'bg-transparent'
                     } group-hover:bg-black/20`}></div>
                     
                     {/* Content */}
                     <div className="relative z-10 text-center h-full flex flex-col items-center justify-center">
-                      <div className={`text-3xl mb-2 transition-all duration-300 ${
-                        imageLoadStates[topic.id] ? 'drop-shadow-lg scale-100' : 'scale-75'
-                      }`}>
-                        {topic.icon}
-                      </div>
                       <div className={`font-semibold transition-all duration-300 ${
-                        imageLoadStates[topic.id] ? 'text-white drop-shadow-lg scale-100' : 'text-gray-400 scale-90'
+                        imageLoadStates[interest.id] ? 'text-white drop-shadow-lg scale-100' : 'text-gray-400 scale-90'
                       }`}>
-                        {topic.name}
+                        {interest.name}
                       </div>
                       
                       {/* Checkmark */}
-                      {selectedTopics.includes(topic.id) && (
+                      {selectedInterests.includes(interest.id) && (
                         <div 
                           className="absolute top-2 right-2 w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center shadow-lg animate-bounce">
                           <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -607,7 +467,7 @@ export default function OnboardingModal() {
                 
                 <button
                   onClick={handleSubmit}
-                  disabled={loading || selectedTopics.length === 0}
+                  disabled={loading || selectedInterests.length === 0}
                   className="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
                 >
                   <span className="flex items-center">

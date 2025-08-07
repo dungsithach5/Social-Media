@@ -131,6 +131,7 @@ model tags {
   createdAt DateTime    @default(now()) @db.DateTime(0)
   updatedAt DateTime    @default(now()) @db.DateTime(0)
   postTags  post_tags[]
+  interests interests[] @relation("InterestTags")
 }
 
 model post_tags {
@@ -162,10 +163,6 @@ model report_posts {
   @@index([reporter_id])
 }
 
-model sequelizemeta {
-  name String @id @unique(map: "name") @db.VarChar(255)
-}
-
 model users {
   id                                   Int             @id @default(autoincrement())
   username                             String?         @unique(map: "username") @db.VarChar(50)
@@ -177,7 +174,6 @@ model users {
   updatedAt                            DateTime        @default(now()) @db.DateTime(0)
   onboarded                            Boolean         @default(false)
   gender                               String?         @db.VarChar(50)
-  topics                               String?         @db.Text
   emailVerified                        DateTime?
   image                                String?         @db.VarChar(255)
   Account                              Account[]
@@ -192,7 +188,19 @@ model users {
   notifications                        notifications[]
   report_posts                         report_posts[]
 
+  interests interests[] @relation("UserInterests")
   posts posts[]
+}
+
+model interests {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique @db.VarChar(100)
+  image_url String    @db.VarChar(255)
+  createdAt DateTime  @default(now()) @db.DateTime(0)
+  updatedAt DateTime  @default(now()) @db.DateTime(0)
+
+  users     users[]   @relation("UserInterests")
+  tags      tags[]    @relation("InterestTags")
 }
 
 model Account {

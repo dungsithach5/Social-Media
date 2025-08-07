@@ -374,22 +374,39 @@ exports.createUser = exports.register;
 
 exports.onboarding = async (req, res) => {
   try {
-    const { email, gender, topics } = req.body;
+    const { email, gender, interestIds } = req.body;
 
     // Input validation
-    if (!email || !gender || !topics) {
+    if (!email || !gender || !interestIds || !Array.isArray(interestIds)) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+        message: 'Email, gender và interests là bắt buộc' 
       });
     }
 
     // Tìm user theo email
-    const user = await prisma.users.findUnique({ where: { email } });
+    const user = await prisma.users.findUnique({
+      where: { email },
+      include: { interests: true }
+    });
+
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Không tìm thấy user' 
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy người dùng với email này.'
+      });
+    }
+
+    // Kiểm tra các interestIds có tồn tại trong hệ thống không
+    const validInterests = await prisma.interests.findMany({
+      where: { id: { in: interestIds } },
+      select: { id: true }
+    });
+
+    if (validInterests.length !== interestIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Một hoặc nhiều interestId không hợp lệ.'
       });
     }
 
@@ -398,8 +415,14 @@ exports.onboarding = async (req, res) => {
       where: { email },
       data: {
         gender,
-        topics: Array.isArray(topics) ? topics : [topics],
-        onboarded: true
+        onboarded: true,
+        interests: {
+          set: [],
+          connect: interestIds.map(id => ({ id }))
+        }
+      },
+      include: {
+        interests: true
       }
     });
 
@@ -410,16 +433,18 @@ exports.onboarding = async (req, res) => {
         id: updatedUser.id,
         email: updatedUser.email,
         gender: updatedUser.gender,
-        topics: updatedUser.topics,
+        interests: updatedUser.interests,
         onboarded: updatedUser.onboarded
       }
     });
 
   } catch (error) {
-    console.error('Onboarding error:', error);
+  console.error('Onboarding error message:', error.message);
+  console.error('Onboarding error stack:', error.stack);
     res.status(500).json({ 
       success: false, 
-      message: 'Lỗi server trong quá trình onboarding' 
+      message: 'Lỗi server trong quá trình onboarding',
+      error: error.message
     });
   }
 };

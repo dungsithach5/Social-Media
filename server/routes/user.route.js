@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email },
       process.env.JWT_SECRET || 'my-secret-key',
-      { expiresIn: '1h' }
+      { expiresIn: '24h' }
     );
 
     res.status(201).json({ 
@@ -161,6 +161,28 @@ router.get('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+router.post('/refresh-token', async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Refresh token missing' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+
+    const newAccessToken = jwt.sign(
+      { id: decoded.id },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid refresh token' });
+  }
+});
+
 // Update user
 router.put('/:id', authMiddleware, async (req, res) => {
   try {
@@ -206,13 +228,13 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // Onboarding route
 router.post('/onboarding', async (req, res) => {
   try {
-    const { email, gender, topics } = req.body;
+    const { email, gender, interestIds } = req.body;
 
     // Input validation
-    if (!email || !gender || !topics) {
+    if (!email || !gender || !Array.isArray(interestIds) || interestIds.length === 0) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email, gender và topics là bắt buộc' 
+        message: 'Email, gender và interests là bắt buộc' 
       });
     }
 
@@ -225,7 +247,7 @@ router.post('/onboarding', async (req, res) => {
       user = await prisma.users.create({
         data: {
           email,
-          username: email.split('@')[0], // Tạo username từ email
+          username: email.split('@')[0],
           createdAt: new Date(),
           updatedAt: new Date(),
           onboarded: false,
@@ -240,7 +262,10 @@ router.post('/onboarding', async (req, res) => {
       data: {
         onboarded: true,
         gender: gender,
-        topics: topics
+        interests: {
+          set: [],
+          connect: interestIds.map(id => ({ id }))
+        }
       }
     });
 
@@ -251,7 +276,7 @@ router.post('/onboarding', async (req, res) => {
         id: updatedUser.id,
         email: updatedUser.email,
         gender: updatedUser.gender,
-        topics: updatedUser.topics,
+        interests: updatedUser.interests,
         onboarded: updatedUser.onboarded
       }
     });
@@ -386,7 +411,7 @@ router.get('/email/:email', async (req, res) => {
         username: true,
         onboarded: true,
         gender: true,
-        topics: true
+        interests: true
       }
     });
 
