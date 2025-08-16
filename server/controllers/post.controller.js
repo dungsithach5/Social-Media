@@ -184,38 +184,50 @@ exports.getPostById = async (req, res) => {
 
 exports.createPost = async (req, res) => {
   try {
-    const { user_id, user_name, title, content, image_url, tags = [] } = req.body;
+    const {
+      user_id,
+      user_name,
+      title,
+      content,
+      image_url,
+      tags = [],
+      // Copyright protection fields
+      license_type,
+      license_description,
+      watermark_enabled,
+      watermark_text,
+      watermark_position,
+      download_protected,
+      allow_download,
+      copyright_owner_id,
+      copyright_year
+    } = req.body;
 
-    // Validate required fields
     if (!user_id) {
-      return res.status(400).json({ 
-        message: 'user_id is required' 
+      return res.status(400).json({
+        message: 'user_id is required'
       });
     }
 
     const dominantColor = image_url ? await getDominantColor(image_url) : null;
 
-    // Validate required fields
     if (!user_name || !title || !content) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'Missing required fields: user_name, title, content',
         received: { user_name, title, content }
       });
     }
 
-    // Find user by email (user_name contains email from frontend)
     const user = await prisma.users.findUnique({
       where: { email: user_name }
     });
 
     if (!user) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: 'User not found with email: ' + user_name,
         suggestion: 'Please make sure the user is registered in the system'
       });
     }
-
-    console.log('Creating post for user:', { id: user.id, email: user.email, username: user.username });
 
     const newPost = await prisma.posts.create({
       data: {
@@ -225,6 +237,16 @@ exports.createPost = async (req, res) => {
         content,
         image_url,
         dominant_color: dominantColor,
+        // Copyright protection fields
+        license_type: license_type || null,
+        license_description: license_description || null,
+        watermark_enabled: watermark_enabled || false,
+        watermark_text: watermark_text || null,
+        watermark_position: watermark_position || null,
+        download_protected: download_protected || false,
+        allow_download: allow_download !== undefined ? allow_download : true,
+        copyright_owner_id: copyright_owner_id || null,
+        copyright_year: copyright_year || null,
         createdAt: new Date(),
         updatedAt: new Date(),
         postTags: {
@@ -245,12 +267,10 @@ exports.createPost = async (req, res) => {
       },
     });
 
-    console.log('Post created successfully:', { id: newPost.id, title: newPost.title });
     res.status(201).json(newPost);
   } catch (error) {
-    console.error('Error creating post with tags:', error);
-    res.status(400).json({ 
-      message: 'Error creating post', 
+    res.status(400).json({
+      message: 'Error creating post',
       error: error.message,
       details: error.code ? `Database error: ${error.code}` : 'Unknown error'
     });

@@ -23,7 +23,7 @@ interface DropdownMenuEllipsisProps {
   fileName?: string;
   onOpenChange?: (open: boolean) => void;
   isOwner?: boolean;
-  onDelete?: (id: number) => void;
+  onDelete?: (id: number) => void;      
   postId?: number;
 }
 

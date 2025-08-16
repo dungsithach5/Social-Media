@@ -102,8 +102,22 @@ model posts {
   content        String          @db.Text
   image_url      String          @db.VarChar(255)
   dominant_color String?         @db.VarChar(7)
+  
+  // Copyright protection fields
+  license_type        String?   @db.VarChar(50)
+  license_description String?   @db.Text
+  watermark_enabled   Boolean   @default(false)
+  watermark_text      String?   @db.VarChar(100)
+  watermark_position  String?   @db.VarChar(20)
+  download_protected  Boolean   @default(false)
+  allow_download      Boolean   @default(true)
+  copyright_owner_id  Int?
+  copyright_year      Int?
+  
   createdAt      DateTime        @db.DateTime(0)
   updatedAt      DateTime        @db.DateTime(0)
+  
+  // Relationships
   comments       comments[]
   likes          likes[]
   relatedPosts   related_posts[] @relation("PostToRelated")
@@ -111,6 +125,7 @@ model posts {
   postTags       post_tags[]
   reportPosts    report_posts[]
   savedPosts     saved_posts[]
+  copyrightViolations copyrightViolation[]
 
   users users @relation(fields: [user_id], references: [id])
 }
@@ -194,6 +209,7 @@ model users {
   notifications                        notifications[]
   report_posts                         report_posts[]
   saved_posts                          saved_posts[]
+  copyrightViolations copyrightViolation[]
 
   posts posts[]
 }
@@ -252,4 +268,22 @@ model saved_posts {
   @@unique([user_id, post_id])
   @@index([user_id])
   @@index([post_id])
+}
+
+model copyrightViolation {
+  id              Int      @id @default(autoincrement())
+  post_id         Int
+  reporter_id     Int
+  violation_type  String   @db.VarChar(50)
+  description     String   @db.Text
+  status          String   @db.VarChar(20)
+  createdAt       DateTime @default(now()) @db.DateTime(0)
+  updatedAt       DateTime @db.DateTime(0)
+  
+  post            posts    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  reporter        users    @relation(fields: [reporter_id], references: [id], onDelete: Cascade)
+  
+  @@index([post_id])
+  @@index([reporter_id])
+  @@index([status])
 }
